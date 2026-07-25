@@ -1,0 +1,6 @@
+com\campus\courseservice\StudentClient.class
+com\campus\courseservice\Course.class
+com\campus\courseservice\CourseController.class
+com\campus\courseservice\StudentClientFallback.class
+com\campus\courseservice\CourseServiceApplication.class
+com\campus\courseservice\StudentDto.class
