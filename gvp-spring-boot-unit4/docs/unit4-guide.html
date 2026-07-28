@@ -1,0 +1,2462 @@
+<title>GVP Book Store — Unit 4 Step-by-Step Build Guide</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ===================== Design tokens ===================== */
+  :root{
+    --paper:#FFFFFF;
+    --surface:#FFFFFF;
+    --surface-2:#F3F5F2;
+    --ink:#16211D;
+    --ink-soft:#455049;
+    --ink-faint:#6B7C74;
+    --accent:#1F7A5C;
+    --accent-soft:#E4F1EA;
+    --accent-2:#A8701A;
+    --accent-2-soft:#F5E9D4;
+    --line:rgba(22,33,29,0.13);
+    --line-strong:rgba(22,33,29,0.24);
+    --radius:10px;
+    --shadow:0 1px 2px rgba(22,33,29,0.06), 0 8px 24px rgba(22,33,29,0.06);
+
+    --code-bg:#16211D;
+    --code-text:#E9F1EC;
+    --code-comment:#7C9587;
+    --code-keyword:#7FD9B9;
+    --code-string:#E8ACB1;
+    --code-annotation:#EAC578;
+    --code-number:#9FD1E8;
+    --code-key:#B9D9C6;
+    --code-line:rgba(233,241,236,0.09);
+
+    --serif:Georgia,'Iowan Old Style','Palatino Linotype','Book Antiqua',serif;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,'SF Mono','JetBrains Mono',Menlo,Consolas,monospace;
+
+    --http-get:#2A6FB0;
+    --http-post:#1F7A5C;
+    --http-put:#A8701A;
+    --http-delete:#B24444;
+  }
+
+  :root[data-theme="dark"]{
+    --paper:#10160F; --surface:#171F19; --surface-2:#1D2620;
+    --ink:#EAF2EC; --ink-soft:#B7C7BE; --ink-faint:#82988C;
+    --accent:#55DDAA; --accent-soft:#1B3128; --accent-2:#E3A94E; --accent-2-soft:#332512;
+    --line:rgba(234,242,236,0.14); --line-strong:rgba(234,242,236,0.26);
+    --shadow:0 1px 2px rgba(0,0,0,0.3), 0 8px 28px rgba(0,0,0,0.35);
+    --http-get:#7CB6EC; --http-post:#55DDAA; --http-put:#E3A94E; --http-delete:#E58787;
+  }
+  :root[data-theme="light"]{
+    --paper:#FFFFFF; --surface:#FFFFFF; --surface-2:#F3F5F2;
+    --ink:#16211D; --ink-soft:#455049; --ink-faint:#6B7C74;
+    --accent:#1F7A5C; --accent-soft:#E4F1EA; --accent-2:#A8701A; --accent-2-soft:#F5E9D4;
+    --line:rgba(22,33,29,0.13); --line-strong:rgba(22,33,29,0.24);
+    --shadow:0 1px 2px rgba(22,33,29,0.06), 0 8px 24px rgba(22,33,29,0.06);
+    --http-get:#2A6FB0; --http-post:#1F7A5C; --http-put:#A8701A; --http-delete:#B24444;
+  }
+
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); line-height:1.7; font-size:16px;
+  }
+  ::selection{ background:var(--accent-soft); }
+  h1,h2,h3,h4{
+    font-family:var(--serif); font-weight:600; color:var(--ink);
+    text-wrap:balance; line-height:1.25; margin:0 0 .5em;
+  }
+  h1{ font-size:clamp(1.9rem,1.5rem + 1.6vw,2.6rem); font-weight:700; }
+  h2{ font-size:clamp(1.4rem,1.25rem + .7vw,1.85rem); margin-top:0; }
+  h3{ font-size:1.2rem; }
+  h4{ font-size:1.02rem; font-family:var(--sans); font-weight:700; }
+  p{ margin:0 0 1.05em; color:var(--ink-soft); max-width:66ch; }
+  a{ color:var(--accent); }
+  code.inline{
+    font-family:var(--mono); font-size:.86em; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:5px; padding:.1em .4em; color:var(--ink);
+  }
+  ul,ol{ color:var(--ink-soft); padding-left:1.3em; max-width:66ch; }
+  li{ margin-bottom:.4em; }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* ===================== Shell / layout ===================== */
+  .shell{ display:flex; min-height:100vh; }
+
+  .topbar{
+    display:none; position:sticky; top:0; z-index:40; align-items:center; gap:.75rem;
+    padding:.7rem 1rem; background:var(--surface); border-bottom:1px solid var(--line);
+  }
+  .topbar .brand{ font-family:var(--serif); font-weight:700; font-size:1.05rem; }
+  .hamburger{
+    width:38px; height:38px; border-radius:8px; border:1px solid var(--line); background:var(--surface-2);
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto; cursor:pointer;
+  }
+  .hamburger span, .hamburger::before, .hamburger::after{ content:""; display:block; width:16px; height:2px; background:var(--ink); border-radius:2px; }
+  .hamburger{ flex-direction:column; gap:4px; }
+
+  .backdrop{
+    display:none; position:fixed; inset:0; background:rgba(10,14,11,0.4); z-index:35;
+  }
+
+  .sidebar{
+    width:288px; flex:0 0 288px; position:sticky; top:0; align-self:flex-start; height:100vh;
+    overflow-y:auto; background:var(--surface); border-right:1px solid var(--line);
+    padding:1.6rem 1.2rem 3rem;
+  }
+  .sidebar .logo{
+    display:flex; align-items:center; gap:.6rem; margin-bottom:1.4rem; text-decoration:none;
+  }
+  .logo-mark{
+    width:34px; height:34px; border-radius:8px; background:var(--accent); flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; color:var(--surface);
+    font-family:var(--serif); font-weight:700; font-size:1.05rem;
+  }
+  .logo-text{ font-family:var(--serif); font-weight:700; color:var(--ink); font-size:1.02rem; line-height:1.2; }
+  .logo-text small{ display:block; font-family:var(--sans); font-weight:600; font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); }
+
+  .nav-group{ margin-bottom:1.3rem; }
+  .nav-group-title{
+    font-size:.7rem; letter-spacing:.09em; text-transform:uppercase; font-weight:700;
+    color:var(--ink-faint); margin:0 0 .5rem 0; padding:.2rem .5rem;
+    display:flex; align-items:center; gap:.4rem; width:100%; cursor:pointer;
+    background:none; border:none; text-align:left; font-family:var(--sans);
+    border-radius:7px;
+  }
+  .nav-group-title:hover{ background:var(--surface-2); color:var(--ink); }
+  .nav-group-title .chev{
+    flex:0 0 auto; font-size:.6rem; transition:transform .2s ease; color:var(--ink-faint);
+  }
+  .nav-group.collapsed .nav-group-title .chev{ transform:rotate(-90deg); }
+  .nav-group.collapsed .nav-group-items{ display:none; }
+  .nav-group-title .grp-count{
+    margin-left:auto; font-size:.66rem; font-weight:700; color:var(--ink-faint);
+    background:var(--surface-2); border-radius:999px; padding:.05rem .4rem;
+  }
+  .nav-item{ display:flex; align-items:center; gap:.15rem; }
+  .nav-item a{
+    display:flex; gap:.5rem; align-items:baseline; text-decoration:none; color:var(--ink-soft);
+    font-size:.89rem; padding:.4rem .5rem; border-radius:7px; line-height:1.35; flex:1 1 auto; min-width:0;
+  }
+  .nav-item a:hover{ background:var(--surface-2); color:var(--ink); }
+  .nav-item a[aria-current="true"]{ background:var(--accent-soft); color:var(--accent); font-weight:700; }
+  .nav-num{ font-family:var(--mono); font-size:.76em; color:var(--ink-faint); flex:0 0 auto; min-width:2ch; }
+  .nav-item a[aria-current="true"] .nav-num{ color:var(--accent); }
+  .nav-check{
+    flex:0 0 auto; width:16px; height:16px; margin:0; cursor:pointer; accent-color:var(--accent);
+  }
+  .nav-item.done a{ color:var(--ink-faint); text-decoration:line-through; text-decoration-thickness:1px; }
+  .nav-item.done .nav-num{ color:var(--accent); }
+
+  /* progress panel */
+  .progress-panel{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:.7rem .8rem; margin-bottom:1.3rem;
+  }
+  .progress-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:.5rem; }
+  .progress-top b{ font-size:.8rem; color:var(--ink); font-family:var(--sans); }
+  .progress-top span{ font-size:.72rem; color:var(--ink-faint); font-variant-numeric:tabular-nums; }
+  .progress-track{ height:7px; background:var(--line); border-radius:999px; overflow:hidden; }
+  .progress-fill{ height:100%; width:0%; background:var(--accent); border-radius:999px; transition:width .3s ease; }
+  .progress-reset{
+    margin-top:.55rem; font-size:.7rem; color:var(--ink-faint); background:none; border:none;
+    cursor:pointer; padding:0; text-decoration:underline;
+  }
+  .progress-reset:hover{ color:var(--http-delete); }
+
+  .main{ flex:1; min-width:0; }
+  .content{ max-width:740px; margin:0 auto; padding:4.2rem 2rem 8rem; }
+  @media (max-width:640px){ .content{ padding:2.2rem 1.15rem 5rem; } }
+
+  section.block{ padding-top:2.6rem; margin-top:0; scroll-margin-top:1.4rem; }
+  section.block + section.block{ border-top:1px solid var(--line); }
+  .eyebrow{
+    font-family:var(--mono); font-size:.78rem; letter-spacing:.06em; color:var(--accent);
+    text-transform:uppercase; font-weight:700; margin-bottom:.4rem; display:block;
+  }
+
+  /* ===================== Hero ===================== */
+  .hero{ padding-bottom:2.6rem; border-bottom:1px solid var(--line); margin-bottom:.6rem; }
+  .hero .eyebrow{ margin-bottom:.6rem; }
+  .hero p.lede{ font-size:1.08rem; color:var(--ink-soft); max-width:60ch; }
+  .hero-actions{ display:flex; flex-wrap:wrap; gap:.6rem; margin-top:1.2rem; }
+  .pill-link{
+    display:inline-flex; align-items:center; gap:.4rem; text-decoration:none;
+    font-size:.86rem; font-weight:600; padding:.5rem .9rem; border-radius:999px;
+    border:1px solid var(--line-strong); color:var(--ink);
+  }
+  .pill-link.primary{ background:var(--ink); color:var(--surface); border-color:var(--ink); }
+  :root[data-theme="dark"] .pill-link.primary, @media (prefers-color-scheme:dark){ .pill-link.primary{ color:var(--paper); } }
+
+  /* ===================== Prose helpers ===================== */
+  .lead{ font-size:1.05rem; }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin:1.2rem 0; }
+  @media (max-width:640px){ .grid-2{ grid-template-columns:1fr; } }
+
+  /* ===================== Callouts ===================== */
+  .note{
+    border-radius:var(--radius); padding:1rem 1.1rem; margin:1.3rem 0; border:1px solid var(--line);
+  }
+  .note-label{
+    display:flex; align-items:center; gap:.5rem; font-size:.72rem; font-weight:800;
+    letter-spacing:.08em; text-transform:uppercase; margin-bottom:.45rem;
+  }
+  .note p, .note ul{ margin-bottom:0; max-width:none; }
+  .note ul{ margin-top:.5rem; }
+  .note--project{ background:var(--accent-soft); border-color:transparent; border-left:3px solid var(--accent); }
+  .note--project .note-label{ color:var(--accent); }
+  .note--try{ background:var(--accent-2-soft); border-color:transparent; border-left:3px solid var(--accent-2); }
+  .note--try .note-label{ color:var(--accent-2); }
+  .note--warn{ background:rgba(178,68,68,0.09); border-color:transparent; border-left:3px solid var(--http-delete); }
+  .note--warn .note-label{ color:var(--http-delete); }
+  .note--dep{ background:rgba(42,111,176,0.09); border-color:transparent; border-left:3px solid var(--http-get); }
+  .note--dep .note-label{ color:var(--http-get); }
+  .dot{ width:7px; height:7px; border-radius:50%; background:currentColor; flex:0 0 auto; }
+
+  /* ===================== Code blocks ===================== */
+  .code-card{
+    border-radius:var(--radius); overflow:hidden; margin:1.3rem 0; box-shadow:var(--shadow);
+    border:1px solid var(--line);
+  }
+  .code-head{
+    display:flex; align-items:center; justify-content:space-between; gap:.6rem;
+    background:var(--surface-2); padding:.5rem .5rem .5rem .9rem; border-bottom:1px solid var(--line);
+  }
+  .code-file{ font-family:var(--mono); font-size:.78rem; color:var(--ink-soft); }
+  .code-file .lang{ color:var(--ink-faint); margin-left:.5em; }
+  pre.code{
+    margin:0; padding:1rem 1.1rem; overflow-x:auto; background:var(--code-bg); color:var(--code-text);
+  }
+  pre.code code{ font-family:var(--mono); font-size:.84rem; line-height:1.65; white-space:pre; }
+
+  /* ===================== Tables ===================== */
+  .table-wrap{ overflow-x:auto; margin:1.2rem 0; border:1px solid var(--line); border-radius:var(--radius); }
+  table{ border-collapse:collapse; width:100%; font-size:.9rem; min-width:480px; }
+  th,td{ text-align:left; padding:.6rem .8rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ background:var(--surface-2); font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); font-weight:700; }
+  tr:last-child td{ border-bottom:none; }
+  td code.inline, th code.inline{ white-space:nowrap; }
+
+  .method-badge{
+    display:inline-block; font-family:var(--mono); font-size:.72rem; font-weight:800;
+    padding:.12rem .45rem; border-radius:5px; color:#fff;
+  }
+  .method-badge.get{ background:var(--http-get); }
+  .method-badge.post{ background:var(--http-post); }
+  .method-badge.put{ background:var(--http-put); }
+  .method-badge.delete{ background:var(--http-delete); }
+
+  /* ===================== Flow diagram ===================== */
+  .flow{ display:flex; flex-wrap:wrap; align-items:stretch; gap:.5rem; margin:1.4rem 0; }
+  .flow-step{
+    flex:1 1 130px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:.8rem .9rem; box-shadow:var(--shadow);
+  }
+  .flow-step b{ display:block; font-size:.86rem; margin-bottom:.2rem; }
+  .flow-step span{ font-size:.78rem; color:var(--ink-faint); }
+  .flow-arrow{ display:flex; align-items:center; justify-content:center; color:var(--ink-faint); font-size:1.2rem; flex:0 0 auto; }
+  @media (max-width:760px){ .flow{ flex-direction:column; } .flow-arrow{ transform:rotate(90deg); padding:.1rem 0; } }
+
+  /* ===================== File tree ===================== */
+  .tree{ font-family:var(--mono); font-size:.82rem; color:var(--ink-soft); line-height:1.85; }
+
+  /* ===================== Steps list ===================== */
+  .steps{ counter-reset:step; list-style:none; padding-left:0; }
+  .steps li{ counter-increment:step; position:relative; padding-left:2.4rem; margin-bottom:1rem; }
+  .steps li::before{
+    content:counter(step); position:absolute; left:0; top:0; width:1.7rem; height:1.7rem;
+    border-radius:50%; background:var(--accent-soft); color:var(--accent); font-weight:800;
+    font-size:.82rem; display:flex; align-items:center; justify-content:center;
+  }
+
+  /* ===================== Big step badge ===================== */
+  .step-badge{
+    display:inline-flex; align-items:center; gap:.5rem; font-family:var(--mono); font-size:.78rem;
+    font-weight:800; color:var(--surface); background:var(--ink); padding:.35rem .8rem;
+    border-radius:999px; margin-bottom:.8rem;
+  }
+
+  /* ===================== Footer nav ===================== */
+  .pagenav{ display:flex; justify-content:space-between; gap:1rem; margin-top:3rem; padding-top:1.4rem; border-top:1px solid var(--line); }
+  .pagenav a{ text-decoration:none; color:var(--ink-soft); font-size:.85rem; }
+  .pagenav a b{ display:block; color:var(--ink); font-family:var(--serif); font-size:1.02rem; }
+
+  @media (max-width:960px){
+    .topbar{ display:flex; }
+    .sidebar{
+      position:fixed; z-index:36; top:0; left:0; height:100dvh; transform:translateX(-102%);
+      transition:transform .22s ease; box-shadow:var(--shadow);
+    }
+    body.nav-open .sidebar{ transform:translateX(0); }
+    body.nav-open .backdrop{ display:block; }
+  }
+</style>
+
+<div class="shell">
+  <div class="backdrop" id="backdrop"></div>
+
+  <header class="topbar">
+    <button class="hamburger" id="navToggle" aria-label="Toggle navigation" aria-expanded="false"><span></span></button>
+    <span class="brand">GVP Book Store — Unit 4 Build Guide</span>
+  </header>
+
+  <nav class="sidebar" id="sidebar" aria-label="Guide navigation">
+    <a class="logo" href="#top">
+      <span class="logo-mark">GB</span>
+      <span class="logo-text">GVP Book Store<small>Step-by-step build guide</small></span>
+    </a>
+
+    <div class="progress-panel">
+      <div class="progress-top"><b>Your progress</b><span id="progressText">0 / 7 steps</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <button class="progress-reset" id="progressReset" type="button">Reset progress</button>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-title" type="button"><span class="chev">▼</span>Start here</button>
+      <div class="nav-group-items">
+        <div class="nav-item"><a href="#how-to-use"><span class="nav-num">·</span>How to use this guide</a></div>
+        <div class="nav-item"><a href="#baseline"><span class="nav-num">·</span>Your baseline project</a></div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-title" type="button"><span class="chev">▼</span>4.1 — Spring Security<span class="grp-count" data-group-count>0/4</span></button>
+      <div class="nav-group-items">
+        <div class="nav-item"><input type="checkbox" class="nav-check" data-step="step-1-password-encoding" aria-label="Mark Password Encoding complete"><a href="#step-1-password-encoding"><span class="nav-num">1</span>Password Encoding</a></div>
+        <div class="nav-item"><input type="checkbox" class="nav-check" data-step="step-2-jwt" aria-label="Mark JWT Auth complete"><a href="#step-2-jwt"><span class="nav-num">2</span>JWT Auth + Security Filters</a></div>
+        <div class="nav-item"><input type="checkbox" class="nav-check" data-step="step-3-rbac" aria-label="Mark RBAC complete"><a href="#step-3-rbac"><span class="nav-num">3</span>Role-Based Access Control</a></div>
+        <div class="nav-item"><input type="checkbox" class="nav-check" data-step="step-4-oauth2" aria-label="Mark OAuth2 complete"><a href="#step-4-oauth2"><span class="nav-num">4</span>OAuth2 Basics (Google)</a></div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-title" type="button"><span class="chev">▼</span>4.2 — Testing<span class="grp-count" data-group-count>0/1</span></button>
+      <div class="nav-group-items">
+        <div class="nav-item"><input type="checkbox" class="nav-check" data-step="step-5-testing" aria-label="Mark Testing complete"><a href="#step-5-testing"><span class="nav-num">5</span>JUnit 5, Mockito &amp; Spring Boot Testing</a></div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-title" type="button"><span class="chev">▼</span>4.3 — Deployment<span class="grp-count" data-group-count>0/2</span></button>
+      <div class="nav-group-items">
+        <div class="nav-item"><input type="checkbox" class="nav-check" data-step="step-6-docker" aria-label="Mark Docker complete"><a href="#step-6-docker"><span class="nav-num">6</span>Packaging &amp; Docker</a></div>
+        <div class="nav-item"><input type="checkbox" class="nav-check" data-step="step-7-k8s" aria-label="Mark Kubernetes complete"><a href="#step-7-k8s"><span class="nav-num">7</span>Kubernetes &amp; Deployment Fundamentals</a></div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <button class="nav-group-title" type="button"><span class="chev">▼</span>Wrap-up</button>
+      <div class="nav-group-items">
+        <div class="nav-item"><a href="#sec-cheatsheet"><span class="nav-num">·</span>Final cheat sheet</a></div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="content" id="top">
+
+      <!-- ============ HERO ============ -->
+      <section class="hero">
+        <span class="eyebrow">Unit 4 · Build it up, one concept at a time</span>
+        <h1>From a plain CRUD API to a secured, tested, deployed one</h1>
+        <p class="lede">
+          You already have a working <code class="inline">gvp-spring-boot-unit4</code> project: a plain Book Store
+          API, no login, no roles, no Docker. This guide adds every Unit 4 concept back in, one step at a time —
+          Password Encoding, JWT, RBAC, Google OAuth2, testing, then packaging and deployment. Each step tells you
+          exactly which Maven dependency to add (if any), gives you full copy-paste-ready code, and ends with curl
+          and Postman commands so you can prove that one feature works before starting the next.
+        </p>
+        <div class="hero-actions">
+          <span class="pill-link primary">▸ mvn spring-boot:run</span>
+          <span class="pill-link">localhost:8081/swagger-ui.html</span>
+          <span class="pill-link">com.gvp.unit4</span>
+        </div>
+      </section>
+
+      <!-- ============ HOW TO USE ============ -->
+      <section class="block" id="how-to-use">
+        <span class="eyebrow">Before you start</span>
+        <h2>How to use this guide</h2>
+        <p>Each step below follows the same shape:</p>
+        <ol class="steps">
+          <li><b>Goal</b> — the one concept this step adds, in one sentence.</li>
+          <li><b>Dependency</b> — the exact <code class="inline">pom.xml</code> addition for this step, or "none" if nothing new is needed.</li>
+          <li><b>Code</b> — every new or changed file, in full, ready to copy-paste into your project.</li>
+          <li><b>Test it</b> — curl (and Postman notes) to prove the step works, with the real response you should see.</li>
+        </ol>
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Restart after every step</p>
+          <p>
+            After adding a step's files and dependency, stop the app (<code class="inline">Ctrl+C</code>) and run
+            <code class="inline">mvn spring-boot:run</code> again before testing — Spring Boot doesn't hot-reload new
+            beans/filters/dependencies on its own without devtools, which this project doesn't include.
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ BASELINE ============ -->
+      <section class="block" id="baseline">
+        <span class="eyebrow">Where you're starting from</span>
+        <h2>Your baseline project</h2>
+        <p>Run it now, before changing anything, and confirm every endpoint is open:</p>
+        <pre class="code" data-lang="bash"><code>mvn spring-boot:run</code></pre>
+        <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>curl http://localhost:8081/api/v1/books
+curl http://localhost:8081/api/v1/categories
+
+curl -X POST http://localhost:8081/api/v1/books -H "Content-Type: application/json" \
+  -d '{"title":"Test","author":"Test","categoryId":1,"price":9.99,"stock":1}'
+# 201 Created - no token needed, nothing is protected yet</code></pre>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Package</th><th>What's in it right now</th></tr></thead>
+            <tbody>
+              <tr><td><code class="inline">controller/</code></td><td><code class="inline">BookController</code>, <code class="inline">CategoryController</code> — plain REST, no security annotations</td></tr>
+              <tr><td><code class="inline">service/</code></td><td><code class="inline">BookService</code>/<code class="inline">Impl</code>, <code class="inline">CategoryService</code>/<code class="inline">Impl</code></td></tr>
+              <tr><td><code class="inline">model/</code></td><td><code class="inline">Book</code>, <code class="inline">Category</code></td></tr>
+              <tr><td><code class="inline">repository/</code></td><td><code class="inline">BookRepository</code>, <code class="inline">CategoryRepository</code> — in-memory <code class="inline">ConcurrentHashMap</code>s</td></tr>
+              <tr><td><code class="inline">dto/</code></td><td><code class="inline">ApiResponse</code>, <code class="inline">ApiError</code>, request/response DTOs</td></tr>
+              <tr><td><code class="inline">exception/</code></td><td><code class="inline">GlobalExceptionHandler</code>, <code class="inline">ResourceNotFoundException</code></td></tr>
+              <tr><td><code class="inline">runner/</code></td><td><code class="inline">DataSeeder</code> (2 categories, 3 books), <code class="inline">StartupInfoLogger</code></td></tr>
+              <tr><td><code class="inline">config/</code></td><td><code class="inline">RequestLoggingFilter</code>, <code class="inline">SwaggerConfig</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>No <code class="inline">security/</code> package, no <code class="inline">User</code>/<code class="inline">Role</code> model, no Docker, no Kubernetes manifests. That's what the next seven steps build.</p>
+      </section>
+
+      <!-- ============ STEP 1 — PASSWORD ENCODING ============ -->
+      <section class="block" id="step-1-password-encoding">
+        <span class="step-badge">STEP 1 of 7</span>
+        <span class="eyebrow">4.1.4 · Password Encoding</span>
+        <h2>Add a User model and register with BCrypt</h2>
+        <p>
+          <b>Goal:</b> introduce a <code class="inline">User</code> with a hashed password, and one endpoint —
+          <code class="inline">POST /api/v1/auth/register</code> — that never stores a plaintext password. No login,
+          no tokens, no locked-down endpoints yet: that's Step 2.
+        </p>
+
+        <div class="note note--dep">
+          <p class="note-label"><span class="dot"></span>Dependency for this step</p>
+          <p>Just the crypto library, not the full security starter — this deliberately avoids Spring Boot auto-locking every endpoint, which only happens once <code class="inline">spring-boot-starter-security</code> itself lands on the classpath (that's Step 2).</p>
+          <pre class="code" data-lang="xml" style="margin-top:.6rem"><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.security&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-security-crypto&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+        </div>
+
+        <h3>New files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">model/Role.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.model;
+
+public enum Role {
+    ROLE_ADMIN,
+    ROLE_USER
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">model/User.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.model;
+
+import java.util.Set;
+
+public class User {
+
+    private Long id;
+    private String username;
+    private String password;
+    private Set&lt;Role&gt; roles;
+
+    public User(Long id, String username, String password, Set&lt;Role&gt; roles) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.roles = roles;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public Set&lt;Role&gt; getRoles() {
+        return roles;
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">repository/UserRepository.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.repository;
+
+import com.gvp.unit4.model.User;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class UserRepository {
+
+    private final Map&lt;Long, User&gt; users = new ConcurrentHashMap&lt;&gt;();
+    private final AtomicLong idSequence = new AtomicLong(1);
+
+    public User save(User user) {
+        if (user.getId() == null) {
+            user.setId(idSequence.getAndIncrement());
+        }
+        users.put(user.getId(), user);
+        return user;
+    }
+
+    public Optional&lt;User&gt; findByUsername(String username) {
+        return users.values().stream().filter(u -&gt; u.getUsername().equals(username)).findFirst();
+    }
+
+    public boolean existsByUsername(String username) {
+        return findByUsername(username).isPresent();
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">exception/DuplicateResourceException.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.exception;
+
+public class DuplicateResourceException extends RuntimeException {
+    public DuplicateResourceException(String message) {
+        super(message);
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">dto/RegisterRequest.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public class RegisterRequest {
+
+    @NotBlank(message = "username is required")
+    @Size(min = 3, max = 30, message = "username must be between 3 and 30 characters")
+    private String username;
+
+    @NotBlank(message = "password is required")
+    @Size(min = 6, message = "password must be at least 6 characters")
+    private String password;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">config/PasswordEncoderConfig.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.config;
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+@Configuration
+public class PasswordEncoderConfig {
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">service/AuthService.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.service;
+
+import com.gvp.unit4.dto.RegisterRequest;
+
+public interface AuthService {
+    void register(RegisterRequest request);
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">service/AuthServiceImpl.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.service;
+
+import com.gvp.unit4.dto.RegisterRequest;
+import com.gvp.unit4.exception.DuplicateResourceException;
+import com.gvp.unit4.model.Role;
+import com.gvp.unit4.model.User;
+import com.gvp.unit4.repository.UserRepository;
+import java.util.EnumSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AuthServiceImpl implements AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    public void register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new DuplicateResourceException("Username '" + request.getUsername() + "' is already taken");
+        }
+        // Never store the raw password - only the BCrypt hash.
+        String hash = passwordEncoder.encode(request.getPassword());
+        User user = new User(null, request.getUsername(), hash, EnumSet.of(Role.ROLE_USER));
+        userRepository.save(user);
+        log.info("Registered new user '{}' with role ROLE_USER", user.getUsername());
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">controller/AuthController.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.controller;
+
+import com.gvp.unit4.dto.ApiResponse;
+import com.gvp.unit4.dto.RegisterRequest;
+import com.gvp.unit4.service.AuthService;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+public class AuthController {
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("User registered successfully", null));
+    }
+}</code></pre>
+        </div>
+
+        <h3>Change to an existing file</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">exception/GlobalExceptionHandler.java <span class="lang">add this handler</span></span></div>
+          <pre class="code" data-lang="java"><code>@ExceptionHandler(DuplicateResourceException.class)
+public ResponseEntity&lt;ApiError&gt; handleDuplicate(DuplicateResourceException ex, HttpServletRequest request) {
+    log.warn("Duplicate resource: {}", ex.getMessage());
+    ApiError error = new ApiError(HttpStatus.CONFLICT.value(), "Conflict", ex.getMessage(), request.getRequestURI());
+    return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+}</code></pre>
+        </div>
+        <p>Drop it in next to the existing <code class="inline">handleNotFound</code> method.</p>
+
+        <div class="note note--try">
+          <p class="note-label"><span class="dot"></span>Test it</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code># Register - password is hashed before storage
+curl -X POST http://localhost:8081/api/v1/auth/register -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"Alice@123"}'
+# {"success":true,"message":"User registered successfully","data":null,...}
+
+# Same username again -> 409 Conflict
+curl -i -X POST http://localhost:8081/api/v1/auth/register -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"Whatever@123"}'
+# 409, "message":"Username 'alice' is already taken"</code></pre>
+          <p style="margin-top:.6rem"><b>Postman:</b> <code class="inline">POST {{baseUrl}}/api/v1/auth/register</code>, body raw JSON, no auth tab needed. Save it into your Postman collection as a new "Auth" folder.</p>
+        </div>
+
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Prove BCrypt is really hashing, outside the app</p>
+          <p>There's no endpoint that returns a password hash (correctly so). To see it directly, run the exact same <code class="inline">BCryptPasswordEncoder</code> class standalone in <code class="inline">jshell</code>:</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>JCL=$(find ~/.m2/repository/org/springframework/spring-jcl -name "*.jar" | grep -v sources | grep -v javadoc | head -1)
+CRYPTO=$(find ~/.m2/repository/org/springframework/security/spring-security-crypto -name "*.jar" | grep -v sources | grep -v javadoc | head -1)
+
+echo 'var enc = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder();
+var h1 = enc.encode("MyPass@123");
+var h2 = enc.encode("MyPass@123");
+System.out.println("Hash 1: " + h1);
+System.out.println("Hash 2: " + h2);
+System.out.println("Same input, different hash (salted): " + !h1.equals(h2));
+System.out.println("matches(correct): " + enc.matches("MyPass@123", h1));
+System.out.println("matches(wrong):   " + enc.matches("WrongPassword", h1));
+/exit' | jshell --class-path "$CRYPTO:$JCL" -</code></pre>
+          <pre class="code" data-lang="text"><code>Hash 1: $2a$10$oEFpkLnqH2ddtg.YrteSGOe1s4qXp1cUfk7mIeYlZwEaL4pwIVI2a
+Hash 2: $2a$10$VVpORsa0bHN6qsrMGMyP7eWBVklUl62oX56p1W/SU6txdrKblEoRe
+Same input, different hash (salted): true
+matches(correct): true
+matches(wrong):   false</code></pre>
+          <p style="margin-top:.6rem">Same password in, two totally different hashes out — that's BCrypt's random salt, embedded as a prefix in every hash it produces. <code class="inline">matches()</code> still validates correctly against either one.</p>
+        </div>
+      </section>
+
+      <!-- ============ STEP 2 — JWT + FILTERS + ARCHITECTURE ============ -->
+      <section class="block" id="step-2-jwt">
+        <span class="step-badge">STEP 2 of 7</span>
+        <span class="eyebrow">4.1.1–4.1.3, 4.1.6 · Spring Security Architecture, Filters, JWT</span>
+        <h2>Add login, a JWT, and Spring Security itself</h2>
+        <p>
+          <b>Goal:</b> a real <code class="inline">POST /api/v1/auth/login</code> that returns a signed JWT, a
+          filter that reads that JWT off every request, and Spring Security switched on for the first time.
+        </p>
+
+        <div class="note note--dep">
+          <p class="note-label"><span class="dot"></span>Dependency for this step</p>
+          <p>Swap the narrow crypto dependency for the full security starter, plus JJWT for signing/parsing tokens:</p>
+          <pre class="code" data-lang="xml" style="margin-top:.6rem"><code>&lt;properties&gt;
+    &lt;java.version&gt;21&lt;/java.version&gt;
+    &lt;jjwt.version&gt;0.12.6&lt;/jjwt.version&gt;
+&lt;/properties&gt;
+
+&lt;!-- remove spring-security-crypto - spring-boot-starter-security already includes it --&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-security&lt;/artifactId&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+    &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+    &lt;artifactId&gt;jjwt-api&lt;/artifactId&gt;
+    &lt;version&gt;${jjwt.version}&lt;/version&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+    &lt;artifactId&gt;jjwt-impl&lt;/artifactId&gt;
+    &lt;version&gt;${jjwt.version}&lt;/version&gt;
+    &lt;scope&gt;runtime&lt;/scope&gt;
+&lt;/dependency&gt;
+&lt;dependency&gt;
+    &lt;groupId&gt;io.jsonwebtoken&lt;/groupId&gt;
+    &lt;artifactId&gt;jjwt-jackson&lt;/artifactId&gt;
+    &lt;version&gt;${jjwt.version}&lt;/version&gt;
+    &lt;scope&gt;runtime&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+        </div>
+
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Gotcha you'll see immediately</p>
+          <p>
+            The moment <code class="inline">spring-boot-starter-security</code> is on the classpath — even before
+            you write a single line of <code class="inline">SecurityConfig</code> — Spring Boot auto-locks
+            <i>every</i> endpoint and prints something like <code class="inline">Using generated security password: 3f9c2b8e-...</code>
+            in the console. That's expected. The <code class="inline">SecurityConfig</code> you add in this same
+            step replaces that default with your own explicit rules, so don't panic if <code class="inline">GET /api/v1/books</code>
+            suddenly 401s right after adding the dependency — finish this step and it'll be intentional again.
+          </p>
+        </div>
+
+        <h3>New files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">config/JwtProperties.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Component
+@ConfigurationProperties(prefix = "app.jwt")
+public class JwtProperties {
+
+    private String secret;
+    private long expirationMs;
+
+    public String getSecret() {
+        return secret;
+    }
+
+    public void setSecret(String secret) {
+        this.secret = secret;
+    }
+
+    public long getExpirationMs() {
+        return expirationMs;
+    }
+
+    public void setExpirationMs(long expirationMs) {
+        this.expirationMs = expirationMs;
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">security/jwt/JwtService.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.security.jwt;
+
+import com.gvp.unit4.config.JwtProperties;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
+import javax.crypto.SecretKey;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+@Service
+public class JwtService {
+
+    private static final String ROLES_CLAIM = "roles";
+
+    private final JwtProperties jwtProperties;
+    private final SecretKey signingKey;
+
+    public JwtService(JwtProperties jwtProperties) {
+        this.jwtProperties = jwtProperties;
+        this.signingKey = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+    }
+
+    public String generateToken(UserDetails userDetails) {
+        List&lt;String&gt; roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.toList());
+
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + jwtProperties.getExpirationMs());
+
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .claim(ROLES_CLAIM, roles)
+                .issuedAt(now)
+                .expiration(expiry)
+                .signWith(signingKey)
+                .compact();
+    }
+
+    public String extractUsername(String token) {
+        return parseClaims(token).getSubject();
+    }
+
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        String username = extractUsername(token);
+        return username.equals(userDetails.getUsername()) && !isExpired(token);
+    }
+
+    public long getExpirationMs() {
+        return jwtProperties.getExpirationMs();
+    }
+
+    private boolean isExpired(String token) {
+        return parseClaims(token).getExpiration().before(new Date());
+    }
+
+    private Claims parseClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(signingKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">security/CustomUserDetailsService.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.security;
+
+import com.gvp.unit4.model.User;
+import com.gvp.unit4.repository.UserRepository;
+import java.util.stream.Collectors;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -&gt; new UsernameNotFoundException("User not found: " + username));
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(user.getUsername())
+                .password(user.getPassword())
+                .authorities(user.getRoles().stream()
+                        .map(Enum::name)
+                        .collect(Collectors.toSet()).toArray(new String[0]))
+                .build();
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">security/jwt/JwtAuthenticationFilter.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.security.jwt;
+
+import com.gvp.unit4.security.CustomUserDetailsService;
+import io.jsonwebtoken.JwtException;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private static final String BEARER_PREFIX = "Bearer ";
+
+    private final JwtService jwtService;
+    private final CustomUserDetailsService userDetailsService;
+
+    public JwtAuthenticationFilter(JwtService jwtService, CustomUserDetailsService userDetailsService) {
+        this.jwtService = jwtService;
+        this.userDetailsService = userDetailsService;
+    }
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
+
+        String authHeader = request.getHeader("Authorization");
+        if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String token = authHeader.substring(BEARER_PREFIX.length());
+        try {
+            String username = jwtService.extractUsername(token);
+            if (username != null &amp;&amp; SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                if (jwtService.isTokenValid(token, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+            }
+        } catch (JwtException | IllegalArgumentException ex) {
+            log.debug("Rejecting invalid JWT on {}: {}", request.getRequestURI(), ex.getMessage());
+        }
+
+        filterChain.doFilter(request, response);
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">security/CustomAuthenticationEntryPoint.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.security;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gvp.unit4.dto.ApiError;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
+
+/** Fires when a request needs authentication and none was provided (or it was invalid) - the 401 case. */
+@Component
+public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+    @Override
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
+            throws IOException {
+        ApiError error = new ApiError(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+                "Authentication is required to access this resource", request.getRequestURI());
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(objectMapper.writeValueAsString(error));
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">config/SecurityConfig.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.config;
+
+import com.gvp.unit4.security.CustomAuthenticationEntryPoint;
+import com.gvp.unit4.security.jwt.JwtAuthenticationFilter;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+            CustomAuthenticationEntryPoint authenticationEntryPoint) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return new ProviderManager(provider);
+    }
+
+    /**
+     * JwtAuthenticationFilter is a @Component so it can be constructor-injected here AND added
+     * explicitly below. Without disabling this, Spring Boot would ALSO auto-register it as a
+     * plain servlet filter applied to every request, running it twice per request.
+     */
+    @Bean
+    public FilterRegistrationBean&lt;JwtAuthenticationFilter&gt; disableFilterAutoRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean&lt;JwtAuthenticationFilter&gt; registration = new FilterRegistrationBean&lt;&gt;(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    @Bean
+    public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -&gt; auth
+                        .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/books/**", "/api/v1/categories/**").permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(ex -&gt; ex.authenticationEntryPoint(authenticationEntryPoint))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+}</code></pre>
+        </div>
+        <p>
+          Delete <code class="inline">config/PasswordEncoderConfig.java</code> now — the
+          <code class="inline">passwordEncoder</code> bean moved into <code class="inline">SecurityConfig</code>
+          above. Two beans with the same name/type would clash.
+        </p>
+        <p>
+          Note writes to Books/Categories now require <i>any</i> logged-in user, not yet a specific role —
+          <code class="inline">.anyRequest().authenticated()</code> doesn't check roles. That's Step 3.
+        </p>
+
+        <h3>Changes to existing files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">dto/LoginRequest.java <span class="lang">new file</span></span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.dto;
+
+import jakarta.validation.constraints.NotBlank;
+
+public class LoginRequest {
+
+    @NotBlank(message = "username is required")
+    private String username;
+
+    @NotBlank(message = "password is required")
+    private String password;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">dto/JwtResponse.java <span class="lang">new file</span></span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.dto;
+
+import java.util.Set;
+
+public class JwtResponse {
+
+    private String token;
+    private String tokenType = "Bearer";
+    private String username;
+    private Set&lt;String&gt; roles;
+    private long expiresInMs;
+
+    public JwtResponse(String token, String username, Set&lt;String&gt; roles, long expiresInMs) {
+        this.token = token;
+        this.username = username;
+        this.roles = roles;
+        this.expiresInMs = expiresInMs;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public String getTokenType() {
+        return tokenType;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public Set&lt;String&gt; getRoles() {
+        return roles;
+    }
+
+    public long getExpiresInMs() {
+        return expiresInMs;
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">dto/UserProfileResponse.java <span class="lang">new file</span></span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.dto;
+
+import java.util.Set;
+
+public class UserProfileResponse {
+
+    private String username;
+    private Set&lt;String&gt; roles;
+    private String authenticationType;
+
+    public UserProfileResponse(String username, Set&lt;String&gt; roles, String authenticationType) {
+        this.username = username;
+        this.roles = roles;
+        this.authenticationType = authenticationType;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public Set&lt;String&gt; getRoles() {
+        return roles;
+    }
+
+    public String getAuthenticationType() {
+        return authenticationType;
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">service/AuthService.java <span class="lang">replace whole file</span></span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.service;
+
+import com.gvp.unit4.dto.JwtResponse;
+import com.gvp.unit4.dto.LoginRequest;
+import com.gvp.unit4.dto.RegisterRequest;
+
+public interface AuthService {
+    void register(RegisterRequest request);
+    JwtResponse login(LoginRequest request);
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">service/AuthServiceImpl.java <span class="lang">replace whole file</span></span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.service;
+
+import com.gvp.unit4.dto.JwtResponse;
+import com.gvp.unit4.dto.LoginRequest;
+import com.gvp.unit4.dto.RegisterRequest;
+import com.gvp.unit4.exception.DuplicateResourceException;
+import com.gvp.unit4.model.Role;
+import com.gvp.unit4.model.User;
+import com.gvp.unit4.repository.UserRepository;
+import com.gvp.unit4.security.jwt.JwtService;
+import java.util.EnumSet;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+@Service
+public class AuthServiceImpl implements AuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
+
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+
+    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager, JwtService jwtService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
+    }
+
+    @Override
+    public void register(RegisterRequest request) {
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new DuplicateResourceException("Username '" + request.getUsername() + "' is already taken");
+        }
+        String hash = passwordEncoder.encode(request.getPassword());
+        User user = new User(null, request.getUsername(), hash, EnumSet.of(Role.ROLE_USER));
+        userRepository.save(user);
+        log.info("Registered new user '{}' with role ROLE_USER", user.getUsername());
+    }
+
+    @Override
+    public JwtResponse login(LoginRequest request) {
+        // Throws BadCredentialsException (mapped to 401 by GlobalExceptionHandler) on bad username/password.
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+
+        UserDetails principal = (UserDetails) authentication.getPrincipal();
+        String token = jwtService.generateToken(principal);
+        var roles = principal.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+
+        log.info("Issued JWT for user '{}'", principal.getUsername());
+        return new JwtResponse(token, principal.getUsername(), roles, jwtService.getExpirationMs());
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">controller/AuthController.java <span class="lang">replace whole file</span></span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.controller;
+
+import com.gvp.unit4.dto.ApiResponse;
+import com.gvp.unit4.dto.JwtResponse;
+import com.gvp.unit4.dto.LoginRequest;
+import com.gvp.unit4.dto.RegisterRequest;
+import com.gvp.unit4.dto.UserProfileResponse;
+import com.gvp.unit4.service.AuthService;
+import jakarta.validation.Valid;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+public class AuthController {
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity&lt;ApiResponse&lt;Void&gt;&gt; register(@Valid @RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.ok("User registered successfully", null));
+    }
+
+    @PostMapping("/login")
+    public ApiResponse&lt;JwtResponse&gt; login(@Valid @RequestBody LoginRequest request) {
+        return ApiResponse.ok("Login successful", authService.login(request));
+    }
+
+    @GetMapping("/me")
+    public ApiResponse&lt;UserProfileResponse&gt; me(@AuthenticationPrincipal UserDetails userDetails) {
+        Set&lt;String&gt; roles = userDetails.getAuthorities().stream().map(GrantedAuthority::getAuthority).collect(Collectors.toSet());
+        return ApiResponse.ok("Current authenticated user", new UserProfileResponse(userDetails.getUsername(), roles, "JWT"));
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">exception/GlobalExceptionHandler.java <span class="lang">add this handler</span></span></div>
+          <pre class="code" data-lang="java"><code>@ExceptionHandler(BadCredentialsException.class)
+public ResponseEntity&lt;ApiError&gt; handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+    log.warn("Login failed for {}: {}", request.getRequestURI(), ex.getMessage());
+    ApiError error = new ApiError(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+            "Invalid username or password", request.getRequestURI());
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+}</code></pre>
+        </div>
+        <p>Add the import <code class="inline">import org.springframework.security.authentication.BadCredentialsException;</code> at the top.</p>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">application.properties <span class="lang">add these lines</span></span></div>
+          <pre class="code" data-lang="properties"><code># HS256 secret, base64-encoded, >= 256 bits. Generated with: openssl rand -base64 48
+app.jwt.secret=${JWT_SECRET:KlwBNvmOALuitI6vCX7Vfwt+EDY/3acPMVNGouzWbeChRy8IMBFP2Fm+YXDsJhCW}
+app.jwt.expiration-ms=3600000</code></pre>
+        </div>
+
+        <div class="note note--try">
+          <p class="note-label"><span class="dot"></span>Test it</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code># Register, then log in and grab the token
+curl -X POST http://localhost:8081/api/v1/auth/register -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"Alice@123"}'
+
+TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/auth/login -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"Alice@123"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['token'])")
+
+# Who am I?
+curl http://localhost:8081/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
+# {"success":true,"data":{"username":"alice","roles":["ROLE_USER"],"authenticationType":"JWT"},...}
+
+# No token -> 401
+curl -i http://localhost:8081/api/v1/auth/me
+# 401, "message":"Authentication is required to access this resource"
+
+# Wrong password -> 401
+curl -i -X POST http://localhost:8081/api/v1/auth/login -H "Content-Type: application/json" \
+  -d '{"username":"alice","password":"WrongPassword"}'</code></pre>
+          <p style="margin-top:.6rem"><b>Postman:</b> on the "Login" request's <b>Tests</b> tab, add <code class="inline">pm.collectionVariables.set('token', pm.response.json().data.token);</code> so every later request can reference <code class="inline">{{token}}</code> in its Authorization (Bearer Token) tab.</p>
+        </div>
+      </section>
+
+      <!-- ============ STEP 3 — RBAC ============ -->
+      <section class="block" id="step-3-rbac">
+        <span class="step-badge">STEP 3 of 7</span>
+        <span class="eyebrow">4.1.5 · Role-Based Access Control</span>
+        <h2>Lock writes down to ROLE_ADMIN</h2>
+        <p>
+          <b>Goal:</b> any logged-in user can currently write books/categories. Restrict that to a seeded
+          <code class="inline">admin</code> account only, enforced at two layers: the URL (SecurityConfig) and the
+          method (<code class="inline">@PreAuthorize</code>).
+        </p>
+        <div class="note note--dep">
+          <p class="note-label"><span class="dot"></span>Dependency for this step</p>
+          <p>None — everything needed is already on the classpath from Step 2.</p>
+        </div>
+
+        <h3>New files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">config/SeedUserProperties.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.config;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
+
+@Component
+@ConfigurationProperties(prefix = "app.security.seed")
+public class SeedUserProperties {
+
+    private String adminUsername;
+    private String adminPassword;
+    private String userUsername;
+    private String userPassword;
+
+    public String getAdminUsername() {
+        return adminUsername;
+    }
+
+    public void setAdminUsername(String adminUsername) {
+        this.adminUsername = adminUsername;
+    }
+
+    public String getAdminPassword() {
+        return adminPassword;
+    }
+
+    public void setAdminPassword(String adminPassword) {
+        this.adminPassword = adminPassword;
+    }
+
+    public String getUserUsername() {
+        return userUsername;
+    }
+
+    public void setUserUsername(String userUsername) {
+        this.userUsername = userUsername;
+    }
+
+    public String getUserPassword() {
+        return userPassword;
+    }
+
+    public void setUserPassword(String userPassword) {
+        this.userPassword = userPassword;
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">security/CustomAccessDeniedHandler.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.security;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gvp.unit4.dto.ApiError;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.stereotype.Component;
+
+/** Fires when the caller IS authenticated but their role doesn't allow this action - the 403 case. */
+@Component
+public class CustomAccessDeniedHandler implements AccessDeniedHandler {
+
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+    @Override
+    public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException)
+            throws IOException {
+        ApiError error = new ApiError(HttpStatus.FORBIDDEN.value(), "Forbidden",
+                "You do not have permission to perform this action", request.getRequestURI());
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getWriter().write(objectMapper.writeValueAsString(error));
+    }
+}</code></pre>
+        </div>
+
+        <h3>Changes to existing files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">runner/DataSeeder.java <span class="lang">replace whole file</span></span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.runner;
+
+import com.gvp.unit4.config.SeedUserProperties;
+import com.gvp.unit4.model.Book;
+import com.gvp.unit4.model.Category;
+import com.gvp.unit4.model.Role;
+import com.gvp.unit4.model.User;
+import com.gvp.unit4.repository.BookRepository;
+import com.gvp.unit4.repository.CategoryRepository;
+import com.gvp.unit4.repository.UserRepository;
+import java.math.BigDecimal;
+import java.util.EnumSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
+
+@Component
+@Order(1)
+public class DataSeeder implements CommandLineRunner {
+
+    private static final Logger log = LoggerFactory.getLogger(DataSeeder.class);
+
+    private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
+    private final BookRepository bookRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final SeedUserProperties seedUserProperties;
+
+    public DataSeeder(UserRepository userRepository, CategoryRepository categoryRepository,
+            BookRepository bookRepository, PasswordEncoder passwordEncoder, SeedUserProperties seedUserProperties) {
+        this.userRepository = userRepository;
+        this.categoryRepository = categoryRepository;
+        this.bookRepository = bookRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.seedUserProperties = seedUserProperties;
+    }
+
+    @Override
+    public void run(String... args) {
+        log.info("Seeding mock users and catalog data (no database configured)...");
+
+        userRepository.save(new User(null, seedUserProperties.getAdminUsername(),
+                passwordEncoder.encode(seedUserProperties.getAdminPassword()), EnumSet.of(Role.ROLE_ADMIN, Role.ROLE_USER)));
+        userRepository.save(new User(null, seedUserProperties.getUserUsername(),
+                passwordEncoder.encode(seedUserProperties.getUserPassword()), EnumSet.of(Role.ROLE_USER)));
+
+        Category programming = categoryRepository.save(new Category(null, "Programming", "Software development and programming languages"));
+        Category fiction = categoryRepository.save(new Category(null, "Fiction", "Novels and short stories"));
+
+        bookRepository.save(new Book(null, "Effective Java", "Joshua Bloch", programming.getId(), new BigDecimal("45.99"), 12));
+        bookRepository.save(new Book(null, "Clean Code", "Robert C. Martin", programming.getId(), new BigDecimal("39.99"), 0));
+        bookRepository.save(new Book(null, "The Silent Patient", "Alex Michaelides", fiction.getId(), new BigDecimal("14.99"), 25));
+
+        log.info("Seeded accounts -> admin: '{}' (ROLE_ADMIN, ROLE_USER), user: '{}' (ROLE_USER)",
+                seedUserProperties.getAdminUsername(), seedUserProperties.getUserUsername());
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">application.properties <span class="lang">add these lines</span></span></div>
+          <pre class="code" data-lang="properties"><code>app.security.seed.admin-username=admin
+app.security.seed.admin-password=Admin@123
+app.security.seed.user-username=user
+app.security.seed.user-password=User@123</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">config/SecurityConfig.java <span class="lang">replace the class annotations and apiFilterChain method</span></span></div>
+          <pre class="code" data-lang="java"><code>import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import com.gvp.unit4.security.CustomAccessDeniedHandler;
+// ...(keep the other existing imports)
+
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+    private final CustomAccessDeniedHandler accessDeniedHandler;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+            CustomAuthenticationEntryPoint authenticationEntryPoint,
+            CustomAccessDeniedHandler accessDeniedHandler) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
+    }
+
+    // ...(passwordEncoder, authenticationManager, disableFilterAutoRegistration beans unchanged)
+
+    @Bean
+    public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -&gt; auth
+                        .requestMatchers("/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/books/**", "/api/v1/categories/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/books/**", "/api/v1/categories/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/books/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/books/**").hasRole("ADMIN")
+                        .anyRequest().authenticated())
+                .exceptionHandling(ex -&gt; ex
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+}</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">service/BookServiceImpl.java <span class="lang">add @PreAuthorize to create/update/delete</span></span></div>
+          <pre class="code" data-lang="java"><code>import org.springframework.security.access.prepost.PreAuthorize;
+// ...
+
+@Override
+@PreAuthorize("hasRole('ADMIN')")
+public BookResponse create(BookRequest request) { /* ...unchanged body... */ }
+
+@Override
+@PreAuthorize("hasRole('ADMIN')")
+public BookResponse update(Long id, BookRequest request) { /* ...unchanged body... */ }
+
+@Override
+@PreAuthorize("hasRole('ADMIN')")
+public void delete(Long id) { /* ...unchanged body... */ }</code></pre>
+        </div>
+        <p><code class="inline">@EnableMethodSecurity</code> is what makes <code class="inline">@PreAuthorize</code> actually get enforced — without it, the annotation is silently ignored.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Who</th><th>Can do</th><th>Cannot do</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code class="inline">ROLE_USER</code></td>
+                <td>Register &amp; log in, check own identity, browse the catalog</td>
+                <td>Create/update/delete a book, create a category — all four get <code class="inline">403</code></td>
+              </tr>
+              <tr>
+                <td><code class="inline">ROLE_ADMIN</code></td>
+                <td>Everything a <code class="inline">ROLE_USER</code> can, plus all four write endpoints</td>
+                <td>Nothing extra restricted</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note note--try">
+          <p class="note-label"><span class="dot"></span>Test it — 401 vs 403 vs success</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>USER_TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/auth/login -H "Content-Type: application/json" \
+  -d '{"username":"user","password":"User@123"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['token'])")
+
+# 1. Right role missing -> 403
+curl -i -X POST http://localhost:8081/api/v1/books -H "Authorization: Bearer $USER_TOKEN" -H "Content-Type: application/json" \
+  -d '{"title":"Test Book","author":"Test Author","categoryId":1,"price":10.00,"stock":5}'
+
+ADMIN_TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/auth/login -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"Admin@123"}' | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['token'])")
+
+# 2. Right role -> 201
+curl -i -X POST http://localhost:8081/api/v1/books -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"title":"Test Book","author":"Test Author","categoryId":1,"price":10.00,"stock":5}'
+
+# 3. No token -> 401
+curl -i -X POST http://localhost:8081/api/v1/books -H "Content-Type: application/json" \
+  -d '{"title":"Test Book","author":"Test Author","categoryId":1,"price":10.00,"stock":5}'</code></pre>
+          <p style="margin-top:.6rem"><b>401 vs 403:</b> 401 means Spring Security couldn't establish who you are at all — <code class="inline">CustomAuthenticationEntryPoint</code>. 403 means it knows exactly who you are, but your role isn't allowed — <code class="inline">CustomAccessDeniedHandler</code>.</p>
+        </div>
+      </section>
+
+      <!-- ============ STEP 4 — OAUTH2 ============ -->
+      <section class="block" id="step-4-oauth2">
+        <span class="step-badge">STEP 4 of 7</span>
+        <span class="eyebrow">4.1.8 · OAuth2 Basics</span>
+        <h2>Add Google login as a second, session-based flow</h2>
+        <p>
+          <b>Goal:</b> a completely separate way of answering "who are you" — delegate to Google instead of your own
+          username/password store. Session-based, browser-driven, and lives in its own filter chain next to the
+          stateless JWT one.
+        </p>
+        <div class="note note--dep">
+          <p class="note-label"><span class="dot"></span>Dependency for this step</p>
+          <pre class="code" data-lang="xml" style="margin-top:.6rem"><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-oauth2-client&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+        </div>
+
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Free, but needs your own Google credentials</p>
+          <ol class="steps">
+            <li>Go to <a href="https://console.cloud.google.com">console.cloud.google.com</a> → create a project (free).</li>
+            <li><b>APIs &amp; Services → OAuth consent screen</b> → "External" → keep it in <b>Testing</b> mode → add yourself as a test user.</li>
+            <li><b>APIs &amp; Services → Credentials → Create Credentials → OAuth client ID</b> → type "Web application".</li>
+            <li>Authorized redirect URI: <code class="inline">http://localhost:8081/login/oauth2/code/google</code></li>
+            <li>Copy the Client ID/Secret into <code class="inline">GOOGLE_CLIENT_ID</code>/<code class="inline">GOOGLE_CLIENT_SECRET</code>.</li>
+          </ol>
+        </div>
+
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">application.properties <span class="lang">add these lines</span></span></div>
+          <pre class="code" data-lang="properties"><code>spring.security.oauth2.client.registration.google.client-id=${GOOGLE_CLIENT_ID:your-google-client-id}
+spring.security.oauth2.client.registration.google.client-secret=${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+spring.security.oauth2.client.registration.google.scope=openid,profile,email</code></pre>
+        </div>
+
+        <h3>New files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">controller/OAuth2ProfileController.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.controller;
+
+import com.gvp.unit4.dto.ApiResponse;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/api/v1/oauth2")
+public class OAuth2ProfileController {
+
+    @GetMapping("/me")
+    public ApiResponse&lt;Map&lt;String, Object&gt;&gt; me(@AuthenticationPrincipal OAuth2User principal) {
+        Map&lt;String, Object&gt; profile = new LinkedHashMap&lt;&gt;();
+        profile.put("name", principal.getAttribute("name"));
+        profile.put("email", principal.getAttribute("email"));
+        profile.put("picture", principal.getAttribute("picture"));
+        profile.put("authenticationType", "OAuth2 (Google)");
+        return ApiResponse.ok("Logged in via Google OAuth2", profile);
+    }
+}</code></pre>
+        </div>
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Gotcha: @AuthenticationPrincipal is required</p>
+          <p>
+            Without it, Spring MVC treats <code class="inline">OAuth2User</code> as a plain method argument and tries
+            to construct it via <code class="inline">@ModelAttribute</code> data binding — which fails at runtime
+            since it's an interface with no constructor
+            (<code class="inline">IllegalStateException: No primary or single unique constructor found</code>).
+          </p>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">controller/OAuth2ProfilePageController.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.controller;
+
+import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+public class OAuth2ProfilePageController {
+
+    @GetMapping(value = "/profile", produces = MediaType.TEXT_HTML_VALUE)
+    public String profilePage(@AuthenticationPrincipal OAuth2User principal) {
+        String name = principal.getAttribute("name");
+        String email = principal.getAttribute("email");
+        String picture = principal.getAttribute("picture");
+        return """
+                &lt;html&gt;&lt;body&gt;
+                &lt;img src="%s"&gt;
+                &lt;h1&gt;Welcome, %s!&lt;/h1&gt;
+                &lt;p&gt;%s&lt;/p&gt;
+                &lt;/body&gt;&lt;/html&gt;
+                """.formatted(picture, name, email);
+    }
+}</code></pre>
+        </div>
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Gotcha: a generics/overload trap</p>
+          <p>
+            <code class="inline">OAuth2User.getAttribute()</code> is generic:
+            <code class="inline">&lt;A&gt; A getAttribute(String name)</code>. Assigning straight to
+            <code class="inline">String name = principal.getAttribute("name")</code> works — the assignment target
+            fixes <code class="inline">A = String</code>. But wrapping it in
+            <code class="inline">String.valueOf(principal.getAttribute("name"))</code> breaks at runtime: since
+            <code class="inline">String.valueOf</code> is overloaded (<code class="inline">Object</code>,
+            <code class="inline">char[]</code>, ...), javac picks the most specific overload it can satisfy and
+            infers <code class="inline">A = char[]</code>, then a real <code class="inline">String</code> gets cast
+            to <code class="inline">char[]</code> and throws <code class="inline">ClassCastException</code>. Assign
+            directly to a typed variable, never route a generic lookup through an overloaded static method.
+          </p>
+        </div>
+
+        <h3>Change to SecurityConfig</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">config/SecurityConfig.java <span class="lang">add @Order(1) to apiFilterChain, add a new googleLoginFilterChain @Order(0)</span></span></div>
+          <pre class="code" data-lang="java"><code>import org.springframework.core.annotation.Order;
+
+@Bean
+@Order(0)
+public SecurityFilterChain googleLoginFilterChain(HttpSecurity http) throws Exception {
+    http.securityMatcher("/oauth2/**", "/login/**", "/api/v1/oauth2/**", "/profile")
+            .csrf(AbstractHttpConfigurer::disable)
+            .authorizeHttpRequests(auth -&gt; auth
+                    .requestMatchers("/oauth2/**", "/login/**").permitAll()
+                    .anyRequest().authenticated())
+            .oauth2Login(oauth2 -&gt; oauth2.defaultSuccessUrl("/api/v1/oauth2/me", true));
+    return http.build();
+}
+
+@Bean
+@Order(1)
+public SecurityFilterChain apiFilterChain(HttpSecurity http) throws Exception {
+    // ...unchanged from Step 3...
+}</code></pre>
+        </div>
+        <p>
+          Spring tries chains in <code class="inline">@Order</code> and picks the first whose
+          <code class="inline">securityMatcher</code> matches the request, so
+          <code class="inline">/oauth2/authorization/google</code> always lands in the Google chain, and everything
+          else falls through to the JWT chain.
+        </p>
+
+        <div class="flow">
+          <div class="flow-step"><b>Browser</b><span>GET /oauth2/authorization/google</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><b>Google</b><span>sign in, consent screen</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><b>Redirect back</b><span>/login/oauth2/code/google</span></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><b>/api/v1/oauth2/me</b> + <b>/profile</b><span>session-based</span></div>
+        </div>
+
+        <div class="note note--try">
+          <p class="note-label"><span class="dot"></span>Test it — browser only, not curl/Postman</p>
+          <p>
+            This is a redirect + session flow, fundamentally different from stateless JWT — that's why it lives in
+            its own filter chain. Once real credentials are in place, open
+            <code class="inline">http://localhost:8081/oauth2/authorization/google</code> in a browser and sign in.
+            You'll land on <code class="inline">/api/v1/oauth2/me</code> (JSON); visit
+            <code class="inline">/profile</code> in the same tab for the HTML welcome page.
+          </p>
+          <p style="margin-top:.6rem">
+            <b>To hit it from curl/Postman anyway:</b> log in via the browser first, copy the
+            <code class="inline">JSESSIONID</code> cookie from DevTools (Application/Storage → Cookies →
+            <code class="inline">localhost:8081</code>), then replay it:
+          </p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>curl http://localhost:8081/api/v1/oauth2/me -H "Cookie: JSESSIONID=&lt;paste-value-here&gt;"</code></pre>
+          <p style="margin-top:.6rem">In Postman: open the Cookies manager below the URL bar, add a cookie for domain <code class="inline">localhost</code> named <code class="inline">JSESSIONID</code> with that value.</p>
+        </div>
+      </section>
+
+      <!-- ============ STEP 5 — TESTING ============ -->
+      <section class="block" id="step-5-testing">
+        <span class="step-badge">STEP 5 of 7</span>
+        <span class="eyebrow">4.2 · Testing</span>
+        <h2>Add a JUnit 5 + Mockito + Spring Boot test suite</h2>
+        <p>
+          <b>Goal:</b> now that the app has real logic worth testing (hashing, JWTs, RBAC), add tests at three
+          levels: pure unit tests with Mockito, a web-layer slice test, and a full end-to-end integration test.
+        </p>
+        <div class="note note--dep">
+          <p class="note-label"><span class="dot"></span>Dependency for this step</p>
+          <pre class="code" data-lang="xml" style="margin-top:.6rem"><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-boot-starter-test&lt;/artifactId&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;
+
+&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.security&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-security-test&lt;/artifactId&gt;
+    &lt;scope&gt;test&lt;/scope&gt;
+&lt;/dependency&gt;</code></pre>
+        </div>
+
+        <h3>Level 1 — pure Mockito unit test (no Spring context at all)</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">src/test/java/.../service/BookServiceImplTest.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
+
+import com.gvp.unit4.dto.BookRequest;
+import com.gvp.unit4.exception.ResourceNotFoundException;
+import com.gvp.unit4.model.Category;
+import com.gvp.unit4.repository.BookRepository;
+import com.gvp.unit4.repository.CategoryRepository;
+import java.math.BigDecimal;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class BookServiceImplTest {
+
+    @Mock private BookRepository bookRepository;
+    @Mock private CategoryRepository categoryRepository;
+    @InjectMocks private BookServiceImpl bookService;
+
+    @Test
+    void create_savesBookWhenCategoryExists() {
+        when(categoryRepository.existsById(1L)).thenReturn(true);
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(new Category(1L, "Programming", "desc")));
+
+        BookRequest request = new BookRequest();
+        request.setTitle("Effective Java");
+        request.setAuthor("Joshua Bloch");
+        request.setCategoryId(1L);
+        request.setPrice(new BigDecimal("45.99"));
+        request.setStock(10);
+
+        when(bookRepository.save(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(inv -&gt; { var b = inv.getArgument(0, com.gvp.unit4.model.Book.class); b.setId(1L); return b; });
+
+        var result = bookService.create(request);
+
+        assertThat(result.getTitle()).isEqualTo("Effective Java");
+        assertThat(result.getCategoryName()).isEqualTo("Programming");
+    }
+
+    @Test
+    void create_throwsWhenCategoryMissing() {
+        when(categoryRepository.existsById(99L)).thenReturn(false);
+        BookRequest request = new BookRequest();
+        request.setCategoryId(99L);
+
+        assertThatThrownBy(() -&gt; bookService.create(request))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Category not found");
+    }
+}</code></pre>
+        </div>
+        <p><code class="inline">@Mock</code> fakes every collaborator, <code class="inline">@InjectMocks</code> wires them into the real <code class="inline">BookServiceImpl</code> — no Spring context boots at all, so this test runs in milliseconds.</p>
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Gotcha: strict stubbing rejects unused @BeforeEach stubs</p>
+          <p>
+            Stubbing <code class="inline">categoryRepository.existsById(1L)</code> in a shared
+            <code class="inline">@BeforeEach</code> feels natural, but <code class="inline">MockitoExtension</code>
+            defaults to strict stubbing: if a test method never calls a stubbed method, it throws
+            <code class="inline">UnnecessaryStubbingException</code> at the end of that test — exactly what happens
+            to <code class="inline">create_throwsWhenCategoryMissing</code> above, since it only needs the
+            <code class="inline">99L</code> stub, not the <code class="inline">1L</code> one from setup. Keep each
+            stub inside the test method that actually uses it, rather than sharing it.
+          </p>
+        </div>
+
+        <h3>Level 2 — @WebMvcTest (web layer only, mocked service)</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">src/test/java/.../controller/CategoryControllerWebMvcTest.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.controller;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.gvp.unit4.dto.CategoryResponse;
+import com.gvp.unit4.security.jwt.JwtAuthenticationFilter;
+import com.gvp.unit4.service.CategoryService;
+import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(controllers = CategoryController.class,
+        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthenticationFilter.class))
+@AutoConfigureMockMvc(addFilters = false)
+class CategoryControllerWebMvcTest {
+
+    @Autowired private MockMvc mockMvc;
+    @MockBean private CategoryService categoryService;
+
+    @Test
+    void getAllCategories_returnsSeededList() throws Exception {
+        when(categoryService.findAll()).thenReturn(List.of(new CategoryResponse(1L, "Programming", "desc")));
+
+        mockMvc.perform(get("/api/v1/categories"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].name").value("Programming"));
+    }
+}</code></pre>
+        </div>
+        <p><code class="inline">@WebMvcTest</code> boots only the web layer (controller, filters, exception handling) — <code class="inline">CategoryService</code> is mocked, so this never touches real business logic.</p>
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Gotcha: @WebMvcTest still pulls in your custom Filter</p>
+          <p>
+            <code class="inline">@WebMvcTest</code> narrows component scanning to controllers — except it also always
+            includes any bean assignable to <code class="inline">jakarta.servlet.Filter</code>, so
+            <code class="inline">JwtAuthenticationFilter</code> gets pulled into the slice too. But <i>its</i>
+            dependency, <code class="inline">JwtService</code> (a plain <code class="inline">@Service</code>), is
+            correctly excluded — so the context fails to start with
+            <code class="inline">NoSuchBeanDefinitionException: JwtService</code>. Excluding
+            <code class="inline">JwtAuthenticationFilter</code> from the slice's component scan (as above) fixes it;
+            <code class="inline">@AutoConfigureMockMvc(addFilters = false)</code> alone is <i>not</i> enough — that
+            only stops the filter from running per-request, it doesn't stop Spring from trying to construct the bean
+            in the first place.
+          </p>
+        </div>
+
+        <h3>Level 3 — @SpringBootTest (full app, real HTTP, real security)</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">src/test/java/.../integration/AuthFlowIntegrationTest.java</span></div>
+          <pre class="code" data-lang="java"><code>package com.gvp.unit4.integration;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class AuthFlowIntegrationTest {
+
+    @Autowired private TestRestTemplate restTemplate;
+
+    @Test
+    void registerThenLogin_issuesWorkingJwt() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        var registerReq = new HttpEntity&lt;&gt;("{\"username\":\"itUser\",\"password\":\"ItUser@123\"}", headers);
+        var registerResp = restTemplate.postForEntity("/api/v1/auth/register", registerReq, String.class);
+        assertThat(registerResp.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        var loginReq = new HttpEntity&lt;&gt;("{\"username\":\"itUser\",\"password\":\"ItUser@123\"}", headers);
+        var loginResp = restTemplate.postForEntity("/api/v1/auth/login", loginReq, String.class);
+        assertThat(loginResp.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(loginResp.getBody()).contains("token");
+    }
+
+    @Test
+    void createBook_asPlainUser_returns403() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        var loginReq = new HttpEntity&lt;&gt;("{\"username\":\"user\",\"password\":\"User@123\"}", headers);
+        var token = restTemplate.postForEntity("/api/v1/auth/login", loginReq, String.class)
+                .getBody().replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+
+        HttpHeaders authHeaders = new HttpHeaders();
+        authHeaders.setContentType(MediaType.APPLICATION_JSON);
+        authHeaders.setBearerAuth(token);
+        var bookReq = new HttpEntity&lt;&gt;("{\"title\":\"X\",\"author\":\"Y\",\"categoryId\":1,\"price\":9.99,\"stock\":1}", authHeaders);
+
+        var resp = restTemplate.postForEntity("/api/v1/books", bookReq, String.class);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+}</code></pre>
+        </div>
+        <p><code class="inline">@SpringBootTest(webEnvironment = RANDOM_PORT)</code> boots the entire application on a real (random) port and drives it over real HTTP with <code class="inline">TestRestTemplate</code> — the closest thing to actually running the app, but repeatable and assertable.</p>
+
+        <div class="note note--try">
+          <p class="note-label"><span class="dot"></span>Run it</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>mvn test</code></pre>
+        </div>
+      </section>
+
+      <!-- ============ STEP 6 — DOCKER ============ -->
+      <section class="block" id="step-6-docker">
+        <span class="step-badge">STEP 6 of 7</span>
+        <span class="eyebrow">4.3.1–4.3.2 · Packaging &amp; Docker</span>
+        <h2>Package as a jar, then containerize it</h2>
+        <p><b>Goal:</b> go from source to a single executable jar, then to a portable container image.</p>
+        <div class="note note--dep">
+          <p class="note-label"><span class="dot"></span>Dependency for this step</p>
+          <p>None new — <code class="inline">spring-boot-maven-plugin</code> has been in <code class="inline">pom.xml</code> since the baseline.</p>
+        </div>
+
+        <h3>Packaging</h3>
+        <pre class="code" data-lang="bash"><code>mvn clean package
+java -jar target/gvp-spring-boot-unit4-0.0.1-SNAPSHOT.jar</code></pre>
+
+        <h3>New files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">Dockerfile</span></div>
+          <pre class="code" data-lang="dockerfile"><code>FROM eclipse-temurin:21-jdk-alpine AS build
+WORKDIR /app
+COPY pom.xml .
+COPY .mvn/ .mvn/
+COPY mvnw .
+RUN chmod +x mvnw
+COPY src ./src
+RUN ./mvnw -q -DskipTests package || mvn -q -DskipTests package
+
+FROM eclipse-temurin:21-jre-alpine
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+EXPOSE 8081
+ENTRYPOINT ["java", "-jar", "app.jar"]</code></pre>
+        </div>
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>No Maven wrapper in this project</p>
+          <p>This project doesn't have <code class="inline">mvnw</code>/<code class="inline">.mvn/</code> checked in. Simplify the build stage to just <code class="inline">RUN mvn -q -DskipTests package</code>, and drop the <code class="inline">COPY mvnw</code>/<code class="inline">COPY .mvn/</code> lines, unless you generate the wrapper yourself first with <code class="inline">mvn -N wrapper:wrapper</code>.</p>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">.dockerignore</span></div>
+          <pre class="code" data-lang="text"><code>target/
+docs/
+*.md
+.git/</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">docker-compose.yml</span></div>
+          <pre class="code" data-lang="yaml"><code>services:
+  gvp-unit4:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET before running}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}</code></pre>
+        </div>
+
+        <div class="note note--try">
+          <p class="note-label"><span class="dot"></span>Test it</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>docker build -t gvp-spring-boot-unit4:local .
+docker run -p 8081:8081 -e JWT_SECRET=$(openssl rand -base64 48) gvp-spring-boot-unit4:local
+# or:
+JWT_SECRET=$(openssl rand -base64 48) docker compose up --build
+
+curl http://localhost:8081/api/v1/books</code></pre>
+        </div>
+      </section>
+
+      <!-- ============ STEP 7 — KUBERNETES ============ -->
+      <section class="block" id="step-7-k8s">
+        <span class="step-badge">STEP 7 of 7</span>
+        <span class="eyebrow">4.3.3–4.3.4 · Kubernetes &amp; Deployment Fundamentals</span>
+        <h2>Run 3 replicas behind a Service</h2>
+        <p><b>Goal:</b> go from one container on your laptop to several self-healing Pods behind a stable network address.</p>
+        <div class="note note--dep">
+          <p class="note-label"><span class="dot"></span>Dependency for this step</p>
+          <p>None new in <code class="inline">pom.xml</code> — this step is pure Kubernetes YAML, applied with <code class="inline">kubectl</code> against a local cluster (Docker Desktop's or minikube).</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Object</th><th>Job</th></tr></thead>
+            <tbody>
+              <tr><td><code class="inline">Deployment</code></td><td>Declares "run 3 replicas of this image" and keeps that many Pods alive</td></tr>
+              <tr><td><code class="inline">Service</code></td><td>A stable network address in front of however many Pods currently exist</td></tr>
+              <tr><td><code class="inline">ConfigMap</code></td><td>Non-secret configuration, injected as env vars</td></tr>
+              <tr><td><code class="inline">Secret</code></td><td>Sensitive configuration (JWT secret, Google client secret), base64-encoded</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>New files</h3>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">k8s/configmap.yaml</span></div>
+          <pre class="code" data-lang="yaml"><code>apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gvp-unit4-config
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  SERVER_PORT: "8081"</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">k8s/secret.example.yaml</span></div>
+          <pre class="code" data-lang="yaml"><code># TEMPLATE - copy to secret.yaml, fill in real values, never commit that file.
+#   echo -n 'your-real-jwt-secret' | base64
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gvp-unit4-secrets
+type: Opaque
+data:
+  JWT_SECRET: eW91ci1yZWFsLWp3dC1zZWNyZXQtYmFzZTY0LWVuY29kZWQtaGVyZQ==
+  GOOGLE_CLIENT_ID: eW91ci1nb29nbGUtY2xpZW50LWlk
+  GOOGLE_CLIENT_SECRET: eW91ci1nb29nbGUtY2xpZW50LXNlY3JldA==</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">k8s/deployment.yaml</span></div>
+          <pre class="code" data-lang="yaml"><code>apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gvp-unit4
+  labels:
+    app: gvp-unit4
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: gvp-unit4
+  template:
+    metadata:
+      labels:
+        app: gvp-unit4
+    spec:
+      containers:
+        - name: gvp-unit4
+          image: gvp-spring-boot-unit4:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8081
+          envFrom:
+            - configMapRef: { name: gvp-unit4-config }
+            - secretRef: { name: gvp-unit4-secrets }
+          readinessProbe:
+            httpGet: { path: /api/v1/categories, port: 8081 }
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/v1/categories, port: 8081 }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests: { cpu: "250m", memory: "384Mi" }
+            limits: { cpu: "500m", memory: "512Mi" }</code></pre>
+        </div>
+        <div class="code-card">
+          <div class="code-head"><span class="code-file">k8s/service.yaml</span></div>
+          <pre class="code" data-lang="yaml"><code>apiVersion: v1
+kind: Service
+metadata:
+  name: gvp-unit4-service
+spec:
+  type: ClusterIP
+  selector:
+    app: gvp-unit4
+  ports:
+    - port: 80
+      targetPort: 8081</code></pre>
+        </div>
+
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Before you apply this — point kubectl at a local cluster</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>kubectl config current-context
+kubectl config use-context docker-desktop   # if it wasn't already</code></pre>
+          <p style="margin-top:.6rem">If that errors with connection refused, enable Kubernetes in Docker Desktop: <b>Settings → Kubernetes → Enable Kubernetes → Apply &amp; Restart</b>.</p>
+        </div>
+
+        <div class="note note--try">
+          <p class="note-label"><span class="dot"></span>Test it</p>
+          <pre class="code" data-lang="bash" style="margin-top:.6rem"><code>cp k8s/secret.example.yaml k8s/secret.yaml
+# edit k8s/secret.yaml with your own base64 values (see below), THEN:
+
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl get pods
+
+kubectl port-forward svc/gvp-unit4-service 8081:80
+curl http://localhost:8081/api/v1/books</code></pre>
+        </div>
+
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Base64-encoding your secret.yaml values</p>
+          <p style="margin-top:.4rem"><b>macOS / Linux (bash/zsh):</b></p>
+          <pre class="code" data-lang="bash" style="margin-top:.4rem"><code>echo -n 'your-real-jwt-secret' | base64
+echo -n 'your-google-client-id' | base64
+echo -n 'your-google-client-secret' | base64</code></pre>
+          <p style="margin-top:.6rem"><b>Windows (PowerShell):</b></p>
+          <pre class="code" data-lang="powershell"><code>[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('your-real-jwt-secret'))
+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('your-google-client-id'))
+[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('your-google-client-secret'))</code></pre>
+          <p style="margin-top:.6rem"><b>Windows (cmd.exe, via certutil):</b></p>
+          <pre class="code" data-lang="bat"><code>echo | set /p="your-real-jwt-secret" > secret.txt
+certutil -encode secret.txt secret.b64 &amp;&amp; findstr /v /c:- secret.b64</code></pre>
+          <p style="margin-top:.6rem"><code class="inline">echo -n</code> matters — a plain <code class="inline">echo</code> appends a trailing newline that gets encoded too and silently corrupts the value.</p>
+        </div>
+
+        <h3>Bonus: a graphical dashboard for your Pods</h3>
+        <p>
+          The official Kubernetes Dashboard project is archived and now Helm-only with extra dependencies, so build
+          it from plain <code class="inline">kubectl create</code> commands instead — no manifest file downloaded
+          from anywhere, only the dashboard's own image pulled from Docker Hub.
+        </p>
+        <pre class="code" data-lang="bash" style="margin-top:.6rem"><code># 1. Namespace, deployment, service
+kubectl create namespace kubernetes-dashboard
+kubectl create deployment kubernetes-dashboard --image=kubernetesui/dashboard:v2.7.0 --port=8443 -n kubernetes-dashboard
+kubectl expose deployment kubernetes-dashboard --port=443 --target-port=8443 -n kubernetes-dashboard
+
+# 2. Admin login
+kubectl create serviceaccount dashboard-admin -n kubernetes-dashboard
+kubectl create clusterrolebinding dashboard-admin --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:dashboard-admin
+
+# 3. Point the Pod at that service account and its own namespace
+kubectl -n kubernetes-dashboard patch deployment kubernetes-dashboard -p '{"spec":{"template":{"spec":{"serviceAccountName":"dashboard-admin"}}}}'
+kubectl -n kubernetes-dashboard patch deployment kubernetes-dashboard --type=json -p '[{"op":"add","path":"/spec/template/spec/containers/0/args","value":["--namespace=kubernetes-dashboard","--auto-generate-certificates"]}]'
+
+# 4. Pre-create the two secrets this version expects (it panics instead of auto-creating them)
+kubectl -n kubernetes-dashboard create secret generic kubernetes-dashboard-csrf --from-literal=csrf=
+kubectl -n kubernetes-dashboard create secret generic kubernetes-dashboard-key-holder --from-literal=priv=
+kubectl -n kubernetes-dashboard rollout status deployment/kubernetes-dashboard --timeout=60s
+
+# 5. Get a login token and open it
+kubectl -n kubernetes-dashboard create token dashboard-admin --duration=24h
+kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard 8443:443
+# open https://localhost:8443, click through the self-signed cert warning, paste the token
+
+# 6. Tear it down when done
+kubectl delete namespace kubernetes-dashboard
+kubectl delete clusterrolebinding dashboard-admin</code></pre>
+        <div class="note note--warn">
+          <p class="note-label"><span class="dot"></span>Gotcha — deleting the container in Docker Desktop doesn't work</p>
+          <p>
+            Docker Desktop's <b>Containers</b> tab shows every Pod as a plain container (that's how
+            <code class="inline">docker-desktop</code>'s Kubernetes runs things under the hood). Deleting it there
+            bypasses <code class="inline">kubectl</code> — the Deployment controller notices the Pod disappeared and
+            immediately recreates it. To actually stop it, delete the Kubernetes objects (step 6 above).
+          </p>
+        </div>
+
+        <h3>Deployment Fundamentals — putting it all together</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Level</th><th>Command</th><th>Good for</th></tr></thead>
+            <tbody>
+              <tr><td>Local jar</td><td><code class="inline">java -jar target/*.jar</code></td><td>Fast local dev loop</td></tr>
+              <tr><td>Docker container</td><td><code class="inline">docker compose up --build</code></td><td>Matching production, on one machine</td></tr>
+              <tr><td>Kubernetes</td><td><code class="inline">kubectl apply -f k8s/</code></td><td>Multiple replicas, self-healing, real load balancing</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Configuration follows the 12-factor principle at every level: profiles (<code class="inline">dev</code>/<code class="inline">prod</code>)
+          pick logging verbosity, and secrets (<code class="inline">JWT_SECRET</code>, <code class="inline">GOOGLE_CLIENT_ID/SECRET</code>)
+          are injected as environment variables rather than baked into the image — the exact same jar and image are reused unchanged across environments.
+        </p>
+      </section>
+
+      <!-- ============ FINAL CHEAT SHEET ============ -->
+      <section class="block" id="sec-cheatsheet">
+        <span class="eyebrow">Wrap-up</span>
+        <h2>Final cheat sheet</h2>
+        <p>Once all seven steps are done, this is the complete, secured API:</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Endpoint</th><th>Auth</th><th>Notes</th></tr></thead>
+            <tbody>
+              <tr><td><span class="method-badge post">POST</span> /api/v1/auth/register</td><td>Public</td><td>Always creates ROLE_USER</td></tr>
+              <tr><td><span class="method-badge post">POST</span> /api/v1/auth/login</td><td>Public</td><td>Returns a JWT</td></tr>
+              <tr><td><span class="method-badge get">GET</span> /api/v1/auth/me</td><td>Bearer JWT</td><td>Any authenticated user</td></tr>
+              <tr><td><span class="method-badge get">GET</span> /api/v1/books, /categories</td><td>Public</td><td>Read-only catalog</td></tr>
+              <tr><td><span class="method-badge post">POST</span>/<span class="method-badge put">PUT</span>/<span class="method-badge delete">DEL</span> /api/v1/books</td><td>Bearer JWT, ROLE_ADMIN</td><td>403 for ROLE_USER</td></tr>
+              <tr><td><span class="method-badge post">POST</span> /api/v1/categories</td><td>Bearer JWT, ROLE_ADMIN</td><td>403 for ROLE_USER</td></tr>
+              <tr><td><span class="method-badge get">GET</span> /oauth2/authorization/google</td><td>Browser redirect</td><td>Needs real Google credentials</td></tr>
+              <tr><td><span class="method-badge get">GET</span> /api/v1/oauth2/me, /profile</td><td>Google session</td><td>Reached only via the redirect flow</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note note--project">
+          <p class="note-label"><span class="dot"></span>Seeded accounts, once Step 3 is done</p>
+          <p><code class="inline">admin</code> / <code class="inline">Admin@123</code> (ROLE_ADMIN, ROLE_USER), <code class="inline">user</code> / <code class="inline">User@123</code> (ROLE_USER).</p>
+        </div>
+        <div class="pagenav">
+          <a href="#top"><b>↑ Back to top</b></a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var toggle = document.getElementById('navToggle');
+    var backdrop = document.getElementById('backdrop');
+    function close() { document.body.classList.remove('nav-open'); toggle && toggle.setAttribute('aria-expanded', 'false'); }
+    function open() { document.body.classList.add('nav-open'); toggle && toggle.setAttribute('aria-expanded', 'true'); }
+    if (toggle) toggle.addEventListener('click', function () {
+      document.body.classList.contains('nav-open') ? close() : open();
+    });
+    if (backdrop) backdrop.addEventListener('click', close);
+
+    var links = Array.prototype.slice.call(document.querySelectorAll('.sidebar a[href^="#"]'));
+    var sections = links.map(function (a) { return document.querySelector(a.getAttribute('href')); }).filter(Boolean);
+    function onScroll() {
+      var pos = window.scrollY + 120;
+      var current = sections[0];
+      sections.forEach(function (s) { if (s.offsetTop <= pos) current = s; });
+      links.forEach(function (a) { a.removeAttribute('aria-current'); });
+      var match = links.find(function (a) { return a.getAttribute('href') === '#' + (current && current.id); });
+      if (match) match.setAttribute('aria-current', 'true');
+    }
+    document.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    links.forEach(function (a) { a.addEventListener('click', close); });
+
+    /* ---- Step completion tracking (persisted in localStorage) ---- */
+    var STORE_KEY = 'gvp-unit4-progress';
+    var checks = Array.prototype.slice.call(document.querySelectorAll('.nav-check'));
+    var totalSteps = checks.length;
+
+    function loadDone() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY)) || {}; }
+      catch (e) { return {}; }
+    }
+    function saveDone(state) {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function refresh() {
+      var state = loadDone();
+      var doneCount = 0;
+      checks.forEach(function (cb) {
+        var id = cb.getAttribute('data-step');
+        var done = !!state[id];
+        cb.checked = done;
+        cb.closest('.nav-item').classList.toggle('done', done);
+        if (done) doneCount++;
+      });
+      // overall progress bar
+      var pct = totalSteps ? Math.round((doneCount / totalSteps) * 100) : 0;
+      var fill = document.getElementById('progressFill');
+      var text = document.getElementById('progressText');
+      if (fill) fill.style.width = pct + '%';
+      if (text) text.textContent = doneCount + ' / ' + totalSteps + ' steps';
+      // per-group counts
+      document.querySelectorAll('.nav-group').forEach(function (grp) {
+        var badge = grp.querySelector('[data-group-count]');
+        if (!badge) return;
+        var groupChecks = grp.querySelectorAll('.nav-check');
+        var gd = 0;
+        groupChecks.forEach(function (c) { if (state[c.getAttribute('data-step')]) gd++; });
+        badge.textContent = gd + '/' + groupChecks.length;
+      });
+    }
+
+    checks.forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var state = loadDone();
+        var id = cb.getAttribute('data-step');
+        if (cb.checked) state[id] = true; else delete state[id];
+        saveDone(state);
+        refresh();
+      });
+    });
+
+    var resetBtn = document.getElementById('progressReset');
+    if (resetBtn) resetBtn.addEventListener('click', function () {
+      saveDone({});
+      refresh();
+    });
+
+    refresh();
+
+    /* ---- Collapsible nav groups (persisted) ---- */
+    var COLLAPSE_KEY = 'gvp-unit4-collapsed';
+    function loadCollapsed() {
+      try { return JSON.parse(localStorage.getItem(COLLAPSE_KEY)) || {}; }
+      catch (e) { return {}; }
+    }
+    var groups = Array.prototype.slice.call(document.querySelectorAll('.nav-group'));
+    var collapsedState = loadCollapsed();
+    groups.forEach(function (grp, i) {
+      var title = grp.querySelector('.nav-group-title');
+      var key = 'g' + i;
+      if (collapsedState[key]) grp.classList.add('collapsed');
+      if (title) title.addEventListener('click', function () {
+        grp.classList.toggle('collapsed');
+        var st = loadCollapsed();
+        if (grp.classList.contains('collapsed')) st[key] = true; else delete st[key];
+        try { localStorage.setItem(COLLAPSE_KEY, JSON.stringify(st)); } catch (e) {}
+      });
+    });
+  })();
+</script>

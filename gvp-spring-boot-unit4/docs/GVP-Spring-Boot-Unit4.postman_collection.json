@@ -1,0 +1,256 @@
+{
+  "info": {
+    "name": "GVP Spring Boot Unit4 - Book Store API (Baseline, no security)",
+    "description": "Baseline collection for the GVP Book Store API teaching project.\n\nThis is the STARTING POINT before any security is added: plain CRUD for Books and Categories, no login, no tokens, every endpoint open. As you work through docs/unit4-guide.html step by step (Password Encoding -> JWT -> RBAC -> OAuth2 -> Testing -> Deployment), you'll add Auth/OAuth2 requests back into a collection like this yourself, matching the curl commands given at each step.\n\nBase URL defaults to http://localhost:8081 (server.port). No database - data is seeded fresh on every restart (2 categories, 3 books).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8081", "type": "string" },
+    { "key": "bookId", "value": "1", "type": "string" },
+    { "key": "categoryId", "value": "1", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List all categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Categories fetched successfully\",\n  \"data\": [\n    { \"id\": 1, \"name\": \"Programming\", \"description\": \"Software development and programming languages\" },\n    { \"id\": 2, \"name\": \"Fiction\", \"description\": \"Novels and short stories\" }\n  ],\n  \"timestamp\": \"2026-07-13T07:00:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get category by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories", "{{categoryId}}"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/categories/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories", "1"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Category fetched successfully\",\n  \"data\": { \"id\": 1, \"name\": \"Programming\", \"description\": \"Software development and programming languages\" },\n  \"timestamp\": \"2026-07-13T07:00:20\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/categories/999", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories", "999"] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-07-13T07:00:40\",\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"Category not found with id: 999\",\n  \"path\": \"/api/v1/categories/999\",\n  \"fieldErrors\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Science Fiction\",\n  \"description\": \"Futuristic and speculative fiction\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories"] }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Science Fiction\",\n  \"description\": \"Futuristic and speculative fiction\"\n}" },
+                "url": { "raw": "{{baseUrl}}/api/v1/categories", "host": ["{{baseUrl}}"], "path": ["api", "v1", "categories"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Category created successfully\",\n  \"data\": { \"id\": 3, \"name\": \"Science Fiction\", \"description\": \"Futuristic and speculative fiction\" },\n  \"timestamp\": \"2026-07-13T07:01:00\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Books",
+      "item": [
+        {
+          "name": "List all books",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/books", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/books", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Books fetched successfully\",\n  \"data\": [\n    { \"id\": 1, \"title\": \"Effective Java\", \"author\": \"Joshua Bloch\", \"categoryName\": \"Programming\", \"price\": 45.99, \"stock\": 12 },\n    { \"id\": 2, \"title\": \"Clean Code\", \"author\": \"Robert C. Martin\", \"categoryName\": \"Programming\", \"price\": 39.99, \"stock\": 0 },\n    { \"id\": 3, \"title\": \"The Silent Patient\", \"author\": \"Alex Michaelides\", \"categoryName\": \"Fiction\", \"price\": 14.99, \"stock\": 25 }\n  ],\n  \"timestamp\": \"2026-07-13T07:02:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get book by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/books/{{bookId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books", "{{bookId}}"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/books/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books", "1"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Book fetched successfully\",\n  \"data\": { \"id\": 1, \"title\": \"Effective Java\", \"author\": \"Joshua Bloch\", \"categoryName\": \"Programming\", \"price\": 45.99, \"stock\": 12 },\n  \"timestamp\": \"2026-07-13T07:02:20\"\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{baseUrl}}/api/v1/books/999", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books", "999"] }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-07-13T07:02:40\",\n  \"status\": 404,\n  \"error\": \"Not Found\",\n  \"message\": \"Book not found with id: 999\",\n  \"path\": \"/api/v1/books/999\",\n  \"fieldErrors\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create book",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Designing Data-Intensive Applications\",\n  \"author\": \"Martin Kleppmann\",\n  \"categoryId\": 1,\n  \"price\": 54.99,\n  \"stock\": 8\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/books", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books"] }
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"title\": \"Designing Data-Intensive Applications\",\n  \"author\": \"Martin Kleppmann\",\n  \"categoryId\": 1,\n  \"price\": 54.99,\n  \"stock\": 8\n}" },
+                "url": { "raw": "{{baseUrl}}/api/v1/books", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books"] }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Book created successfully\",\n  \"data\": { \"id\": 4, \"title\": \"Designing Data-Intensive Applications\", \"author\": \"Martin Kleppmann\", \"categoryName\": \"Programming\", \"price\": 54.99, \"stock\": 8 },\n  \"timestamp\": \"2026-07-13T07:03:00\"\n}"
+            },
+            {
+              "name": "400 Bad Request - validation failed",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"title\": \"\",\n  \"author\": \"\",\n  \"categoryId\": null,\n  \"price\": -5,\n  \"stock\": -1\n}" },
+                "url": { "raw": "{{baseUrl}}/api/v1/books", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books"] }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"timestamp\": \"2026-07-13T07:03:20\",\n  \"status\": 400,\n  \"error\": \"Validation Failed\",\n  \"message\": \"One or more fields are invalid\",\n  \"path\": \"/api/v1/books\",\n  \"fieldErrors\": {\n    \"title\": \"title is required\",\n    \"author\": \"author is required\",\n    \"categoryId\": \"categoryId is required\",\n    \"price\": \"price must be greater than 0\",\n    \"stock\": \"stock cannot be negative\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update book",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Effective Java (3rd Edition)\",\n  \"author\": \"Joshua Bloch\",\n  \"categoryId\": 1,\n  \"price\": 49.99,\n  \"stock\": 15\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/v1/books/{{bookId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books", "{{bookId}}"] }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"title\": \"Effective Java (3rd Edition)\",\n  \"author\": \"Joshua Bloch\",\n  \"categoryId\": 1,\n  \"price\": 49.99,\n  \"stock\": 15\n}" },
+                "url": { "raw": "{{baseUrl}}/api/v1/books/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books", "1"] }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"message\": \"Book updated successfully\",\n  \"data\": { \"id\": 1, \"title\": \"Effective Java (3rd Edition)\", \"author\": \"Joshua Bloch\", \"categoryName\": \"Programming\", \"price\": 49.99, \"stock\": 15 },\n  \"timestamp\": \"2026-07-13T07:03:40\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete book",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/v1/books/{{bookId}}", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books", "{{bookId}}"] }
+          },
+          "response": [
+            {
+              "name": "204 No Content",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": { "raw": "{{baseUrl}}/api/v1/books/1", "host": ["{{baseUrl}}"], "path": ["api", "v1", "books", "1"] }
+              },
+              "status": "No Content",
+              "code": 204,
+              "_postman_previewlanguage": "json",
+              "header": [],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
